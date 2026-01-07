@@ -5,7 +5,7 @@ This repository contains data assets and a script to generate an executive dashb
 ## Contents
 - All Hits - Summary Statistics.csv
 - Presented Hits - Summary Statistics.csv
-- Presented Provider Hits.csv
+- All Provider Hits.csv
 - Whitepapers/ (PDFs per concept)
 - analysis/generate_dashboard.py (builds the HTML dashboard)
 - reports/executive-dashboard.html (output, created after running the script)

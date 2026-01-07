@@ -2,6 +2,7 @@ import os
 import shutil
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import plotly.io as pio
 from pathlib import Path
 from datetime import timedelta
@@ -34,7 +35,7 @@ presented_hits = pd.read_csv(
 )
 
 provider_hits = pd.read_csv(
-  DATA_DIR / 'Presented Provider Hits.csv',
+  DATA_DIR / 'All Provider Hits.csv',
   dtype={'Billing NPI': str},
   thousands=',',
   engine='python',
@@ -138,6 +139,42 @@ fig_claims_hist = px.histogram(
 fig_claims_hist.update_layout(margin=dict(l=40, r=40, t=60, b=40), legend_title_text='Concept')
 fig_claims_hist.update_traces(opacity=0.75)
 
+# Live tracker: Simplified "arrow of time" timelines
+# Aggregate by delivery date: sum overpayment, list concepts per date
+def _date_summary(df: pd.DataFrame) -> pd.DataFrame:
+  d = df[['Date of Client Delivery', 'Concept', 'Total Overpayment']].copy()
+  d['Date of Client Delivery'] = pd.to_datetime(d['Date of Client Delivery'], errors='coerce')
+  d = d.dropna(subset=['Date of Client Delivery'])
+  d['Concept'] = d['Concept'].fillna('')
+  summary = (d.groupby('Date of Client Delivery')
+               .agg(
+                 Total_Overpayment=('Total Overpayment', 'sum'),
+                 Concepts=('Concept', lambda s: ', '.join(sorted({c for c in s if c})))
+               )
+               .reset_index()
+               .sort_values('Date of Client Delivery'))
+  summary['Label'] = summary.apply(lambda r: f"{r['Concepts']}<br>${r['Total_Overpayment']:,.0f}", axis=1)
+  return summary
+
+presented_summary = _date_summary(presented_hits)
+all_summary = _date_summary(all_hits)
+
+def build_timeline_html(df: pd.DataFrame, title: str, line_color: str = '#94a3b8', tick_color: str = '#0b5cab') -> str:
+  if df.empty:
+    return f"<div class='timeline'><div class='timeline-title'>{title}</div><div class='small'>No data available.</div></div>"
+  dates = pd.to_datetime(df['Date of Client Delivery'])
+  min_d, max_d = dates.min(), dates.max()
+  span = (max_d - min_d).days or 1
+  items = []
+  for _, r in df.iterrows():
+    d = pd.to_datetime(r['Date of Client Delivery'])
+    pos = ((d - min_d).days / span) * 100
+    date_str = pd.to_datetime(r['Date of Client Delivery']).date().isoformat()
+    label = f"{date_str}<br>{r['Label']}"
+    items.append(f"<div class='timeline-label' style='left:{pos}%'>{label}</div><div class='timeline-tick' style='left:{pos}%; background:{tick_color}'></div>")
+  line_style = f"background:{line_color}"
+  return f"<div class='timeline'><div class='timeline-title'>{title}</div><div class='timeline-line' style='{line_style}'>{''.join(items)}</div></div>"
+
 # Build HTML report
 style = """
 <style>
@@ -153,6 +190,13 @@ th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; }
 th { background: #eff6ff; }
 .caption { font-weight: 600; margin: 8px 0; }
 .note { background: #fff7ed; border: 1px solid #fed7aa; padding: 8px; border-radius: 6px; }
+.chart-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; align-items: start; }
+.timeline { margin: 8px 0 24px; }
+.timeline-title { font-weight: 600; margin-bottom: 6px; }
+.timeline-line { position: relative; height: 4px; background: #e2e8f0; border-radius: 2px; }
+.timeline-line::after { content: ''; position: absolute; right: -12px; top: -6px; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-left: 12px solid #94a3b8; }
+.timeline-tick { position: absolute; top: -6px; width: 12px; height: 12px; background: #0b5cab; border-radius: 50%; transform: translateX(-50%); }
+.timeline-label { position: absolute; top: -36px; transform: translateX(-50%); white-space: normal; font-size: 0.85em; color: #334155; background: #f8fafc; padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 6px; max-width: 320px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
 </style>
 """
 
@@ -227,6 +271,8 @@ progress_table_html = progress_df.to_html(index=False)
 
 paid_hist_html = pio.to_html(fig_paid_hist, include_plotlyjs='cdn', full_html=False, div_id='paid_hist')
 claims_hist_html = pio.to_html(fig_claims_hist, include_plotlyjs=False, full_html=False, div_id='claims_hist')
+presented_tracker_html = build_timeline_html(presented_summary, 'Arrow of Time — Presented to BCBS NC', line_color='#cbd5e1', tick_color='#0b5cab')
+all_tracker_html = build_timeline_html(all_summary, 'Arrow of Time — All Identified Hits', line_color='#cbd5e1', tick_color='#2563eb')
 
 html = f"""
 <!doctype html>
@@ -245,17 +291,17 @@ html = f"""
   <h2>Aggregate Summary</h2>
   {summary_html}
 
-  <h2>FWA Concepts Presented</h2>
+  <h2>FWA Concepts Presented to BCBS NC</h2>
   <div class='table-wrap'>
     {concept_table_html}
   </div>
 
-  <h2>Concept-Level Statistics — Presented Hits</h2>
+  <h2>Concept-Level Statistics — Presented Hits to BCBS NC</h2>
   <div class='table-wrap'>
     {presented_table_html}
   </div>
 
-  <h2>Concept-Level Statistics — All Hits</h2>
+  <h2>Concept-Level Statistics — All Identified Hits</h2>
   <div class='table-wrap'>
     {all_table_html}
   </div>
@@ -266,7 +312,9 @@ html = f"""
     {progress_table_html}
   </div>
 
-  <h2>Provider-Level Distributions</h2>
+  
+
+  <h2>Provider-Level Distributions Across All Identified Hits</h2>
   <p class='small'>Distribution of Total Overpayment and Number of Claim Hits per provider, shown by concept.</p>
   {paid_hist_html}
   {claims_hist_html}

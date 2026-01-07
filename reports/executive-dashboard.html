@@ -1,0 +1,258 @@
+
+<!doctype html>
+<html>
+<head>
+<meta charset='utf-8'>
+<title>Executive Dashboard — FWA (BCBS NC)</title>
+
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #222; }
+h1, h2, h3 { color: #0b5cab; }
+.container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+.summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
+.small { color: #475569; font-size: 0.9em; }
+.table-wrap { overflow-x: auto; margin: 12px 0; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; }
+th { background: #eff6ff; }
+.caption { font-weight: 600; margin: 8px 0; }
+.note { background: #fff7ed; border: 1px solid #fed7aa; padding: 8px; border-radius: 6px; }
+</style>
+
+</head>
+<body>
+<div class='container'>
+  <h1>Executive Tracking Dashboard — FWA Deliverables (BCBS NC)</h1>
+  <p class='small'>This dashboard summarizes delivered FWA concepts, key statistics, and provider-level distributions.</p>
+  <p class='small'>As of January 07, 2026</p>
+
+  <h2>Aggregate Summary</h2>
+  
+<div class='summary'>
+  <div class='card'>
+    <div class='caption'>Number of Concepts Delivered to Date</div>
+    <div><strong>4</strong></div>
+    <div class='small'>Distinct concepts in Presented Hits.</div>
+  </div>
+  <div class='card'>
+    <div class='caption'>Total Estimated Overpayment</div>
+    <div><strong>$4,399,673</strong> (presented)</div>
+    <div class='small'>Overall: $22,069,869</div>
+  </div>
+  <div class='card'>
+    <div class='caption'>Providers Flagged</div>
+    <div><strong>22</strong> presented</div>
+    <div class='small'>Overall flagged: 899</div>
+  </div>
+  <div class='card'>
+    <div class='caption'>Claims Flagged</div>
+    <div><strong>13,887</strong> presented</div>
+    <div class='small'>Overall flagged: 47,034</div>
+  </div>
+</div>
+
+
+  <h2>FWA Concepts Presented</h2>
+  <div class='table-wrap'>
+    <table border="1" class="dataframe concept-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Concept</th>
+      <th>Date of Client Delivery</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Skin_graft</td>
+      <td>2025-11-05</td>
+      <td>Providers with high paid amounts for selected skin graft/substitute codes (Q4164, Q4186, Q4205, Q4217, Q4253); flagged if in the top 10%.</td>
+    </tr>
+    <tr>
+      <td>Intravitreal_injection_2</td>
+      <td>2025-11-05</td>
+      <td>Providers billing intravitreal injections (67028) with drug J-codes but without relevant ophthalmologic diagnoses; flagged if in the top 10% by paid amount.</td>
+    </tr>
+    <tr>
+      <td>Intravitreal_injection_EM</td>
+      <td>2025-11-19</td>
+      <td>Providers billing intravitreal injections (67028) and E/M codes (99202 to 99215) on the same claim; flagged if in the top 10% by paid amount.</td>
+    </tr>
+    <tr>
+      <td>DME_location</td>
+      <td>2025-12-17</td>
+      <td>Providers billing DME (L-codes) where the member state differs from the provider state.</td>
+    </tr>
+  </tbody>
+</table>
+  </div>
+
+  <h2>Concept-Level Statistics — Presented Hits</h2>
+  <div class='table-wrap'>
+    <table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Concept</th>
+      <th>Number of Provider Hits</th>
+      <th>Number of Claim Hits</th>
+      <th>Number of Members Impacted</th>
+      <th>Total Overpayment</th>
+      <th>Total Paid Amount</th>
+      <th>Average Overpayment Per Provider</th>
+      <th>Average Overpayment Per Claim</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Skin_graft</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>$1,612,943</td>
+      <td>$1,614,414</td>
+      <td>$1,612,943</td>
+      <td>$1,612,943</td>
+    </tr>
+    <tr>
+      <td>Intravitreal_injection_2</td>
+      <td>3</td>
+      <td>383</td>
+      <td>478</td>
+      <td>$701,264</td>
+      <td>$708,177</td>
+      <td>$233,755</td>
+      <td>$1,831</td>
+    </tr>
+    <tr>
+      <td>Intravitreal_injection_EM</td>
+      <td>12</td>
+      <td>7829</td>
+      <td>2587</td>
+      <td>$1,203,820</td>
+      <td>$8,218,381</td>
+      <td>$100,318</td>
+      <td>$154</td>
+    </tr>
+    <tr>
+      <td>DME_location</td>
+      <td>6</td>
+      <td>5674</td>
+      <td>5104</td>
+      <td>$881,646</td>
+      <td>$1,094,457</td>
+      <td>$146,941</td>
+      <td>$155</td>
+    </tr>
+  </tbody>
+</table>
+  </div>
+
+  <h2>Concept-Level Statistics — All Hits</h2>
+  <div class='table-wrap'>
+    <table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Concept</th>
+      <th>Number of Provider Hits</th>
+      <th>Number of Claim Hits</th>
+      <th>Number of Members Impacted</th>
+      <th>Total Overpayment</th>
+      <th>Total Paid Amount</th>
+      <th>Average Overpayment Per Provider</th>
+      <th>Average Overpayment Per Claim</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Skin_graft</td>
+      <td>6</td>
+      <td>289</td>
+      <td>26</td>
+      <td>$6,253,498</td>
+      <td>$6,710,528</td>
+      <td>$1,042,250</td>
+      <td>$21,638</td>
+    </tr>
+    <tr>
+      <td>Intravitreal_injection_2</td>
+      <td>24</td>
+      <td>1367</td>
+      <td>332</td>
+      <td>$2,587,812</td>
+      <td>$3,076,866</td>
+      <td>$107,825</td>
+      <td>$1,893</td>
+    </tr>
+    <tr>
+      <td>Intravitreal_injection_EM</td>
+      <td>31</td>
+      <td>15101</td>
+      <td>3737</td>
+      <td>$3,069,990</td>
+      <td>$27,771,924</td>
+      <td>$99,032</td>
+      <td>$203</td>
+    </tr>
+    <tr>
+      <td>DME_location</td>
+      <td>838</td>
+      <td>30277</td>
+      <td>20072</td>
+      <td>$10,158,569</td>
+      <td>$14,726,880</td>
+      <td>$12,122</td>
+      <td>$336</td>
+    </tr>
+  </tbody>
+</table>
+  </div>
+
+  <h2>Delivery Cadence</h2>
+  <p class='small'>Days since baseline (2025-11-05); average successive cadence: <strong>14.0 days</strong>.</p>
+  <div class='table-wrap'>
+    <table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Concept</th>
+      <th>Date of Client Delivery</th>
+      <th>Delta Days</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Skin_graft</td>
+      <td>2025-11-05</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>Intravitreal_injection_2</td>
+      <td>2025-11-05</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>Intravitreal_injection_EM</td>
+      <td>2025-11-19</td>
+      <td>14</td>
+    </tr>
+    <tr>
+      <td>DME_location</td>
+      <td>2025-12-17</td>
+      <td>42</td>
+    </tr>
+  </tbody>
+</table>
+  </div>
+
+  <h2>Provider-Level Distributions</h2>
+  <p class='small'>Distribution of Total Overpayment and Number of Claim Hits per provider, shown by concept.</p>
+  <div>                        <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
+        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.3.0.min.js" integrity="sha256-bO3dS6yCpk9aK4gUpNELtCiDeSYvGYnK7jFI58NQnHI=" crossorigin="anonymous"></script>                <div id="paid_hist" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("paid_hist")) {                    Plotly.newPlot(                        "paid_hist",                        [{"bingroup":"x","hovertemplate":"Concept=Intravitreal_injection_EM\u003cbr\u003eTotal Overpayment=%{x}\u003cbr\u003ecount=%{y}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"Intravitreal_injection_EM","marker":{"color":"#636efa","opacity":0.5,"pattern":{"shape":""}},"name":"Intravitreal_injection_EM","nbinsx":50,"orientation":"v","showlegend":true,"x":{"dtype":"i4","bdata":"SfgCAEVeAADrHwAAyFwCAJ90CQDjywAATzYAAGCCBwAcfQAA2X4GAAHTAAC9mAAA"},"xaxis":"x","yaxis":"y","type":"histogram","opacity":0.75},{"bingroup":"x","hovertemplate":"Concept=Skin_graft\u003cbr\u003eTotal Overpayment=%{x}\u003cbr\u003ecount=%{y}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"Skin_graft","marker":{"color":"#EF553B","opacity":0.5,"pattern":{"shape":""}},"name":"Skin_graft","nbinsx":50,"orientation":"v","showlegend":true,"x":{"dtype":"i4","bdata":"oPFUAA=="},"xaxis":"x","yaxis":"y","type":"histogram","opacity":0.75},{"bingroup":"x","hovertemplate":"Concept=Intravitreal_injection_2\u003cbr\u003eTotal Overpayment=%{x}\u003cbr\u003ecount=%{y}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"Intravitreal_injection_2","marker":{"color":"#00cc96","opacity":0.5,"pattern":{"shape":""}},"name":"Intravitreal_injection_2","nbinsx":50,"orientation":"v","showlegend":true,"x":{"dtype":"i4","bdata":"2hkPAOdHBgDOygMA"},"xaxis":"x","yaxis":"y","type":"histogram","opacity":0.75},{"bingroup":"x","hovertemplate":"Concept=DME_location\u003cbr\u003eTotal Overpayment=%{x}\u003cbr\u003ecount=%{y}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"DME_location","marker":{"color":"#ab63fa","opacity":0.5,"pattern":{"shape":""}},"name":"DME_location","nbinsx":50,"orientation":"v","showlegend":true,"x":{"dtype":"i4","bdata":"dAMIALbdAgBAmgEAljQCABQSCwB2wQMA"},"xaxis":"x","yaxis":"y","type":"histogram","opacity":0.75}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"Total Overpayment ($)"}},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"Count of Providers"}},"legend":{"title":{"text":"Concept"},"tracegroupgap":0},"title":{"text":"Distribution of Total Overpayment per Provider"},"barmode":"overlay","margin":{"l":40,"r":40,"t":60,"b":40}},                        {"responsive": true}                    )                };            </script>        </div>
+  <div>                            <div id="claims_hist" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("claims_hist")) {                    Plotly.newPlot(                        "claims_hist",                        [{"bingroup":"x","hovertemplate":"Concept=Intravitreal_injection_EM\u003cbr\u003eNumber of Claim Hits=%{x}\u003cbr\u003ecount=%{y}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"Intravitreal_injection_EM","marker":{"color":"#636efa","opacity":0.5,"pattern":{"shape":""}},"name":"Intravitreal_injection_EM","nbinsx":50,"orientation":"v","showlegend":true,"x":{"dtype":"i2","bdata":"AQN2ADIA8APjCq8AWgBIB7IAUgkgAZ0A"},"xaxis":"x","yaxis":"y","type":"histogram","opacity":0.75},{"bingroup":"x","hovertemplate":"Concept=Skin_graft\u003cbr\u003eNumber of Claim Hits=%{x}\u003cbr\u003ecount=%{y}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"Skin_graft","marker":{"color":"#EF553B","opacity":0.5,"pattern":{"shape":""}},"name":"Skin_graft","nbinsx":50,"orientation":"v","showlegend":true,"x":{"dtype":"i2","bdata":"2wA="},"xaxis":"x","yaxis":"y","type":"histogram","opacity":0.75},{"bingroup":"x","hovertemplate":"Concept=Intravitreal_injection_2\u003cbr\u003eNumber of Claim Hits=%{x}\u003cbr\u003ecount=%{y}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"Intravitreal_injection_2","marker":{"color":"#00cc96","opacity":0.5,"pattern":{"shape":""}},"name":"Intravitreal_injection_2","nbinsx":50,"orientation":"v","showlegend":true,"x":{"dtype":"i2","bdata":"bQGPAIoA"},"xaxis":"x","yaxis":"y","type":"histogram","opacity":0.75},{"bingroup":"x","hovertemplate":"Concept=DME_location\u003cbr\u003eNumber of Claim Hits=%{x}\u003cbr\u003ecount=%{y}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"DME_location","marker":{"color":"#ab63fa","opacity":0.5,"pattern":{"shape":""}},"name":"DME_location","nbinsx":50,"orientation":"v","showlegend":true,"x":{"dtype":"i2","bdata":"PgJEAS8AoQAAHTwB"},"xaxis":"x","yaxis":"y","type":"histogram","opacity":0.75}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"Number of Claim Hits"}},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"count"}},"legend":{"title":{"text":"Concept"},"tracegroupgap":0},"title":{"text":"Distribution of Number of Claim Hits per Provider"},"barmode":"overlay","margin":{"l":40,"r":40,"t":60,"b":40}},                        {"responsive": true}                    )                };            </script>        </div>
+
+  <div class='note'>
+    Note: Currency fields were normalized by stripping "$", commas, and whitespace. Presented Hits contains trailing empty rows and an extra blank column, which were handled during parsing. Billing NPI is treated as a string to preserve leading zeros.
+  </div>
+</div>
+</body>
+</html>

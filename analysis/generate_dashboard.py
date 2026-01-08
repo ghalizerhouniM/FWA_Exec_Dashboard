@@ -404,6 +404,27 @@ root_output.write_text(html, encoding='utf-8')
 
 written_paths = [root_output]
 
+# Always write to reports directory as well
+reports_dir = REPORTS_DIR
+reports_dir.mkdir(parents=True, exist_ok=True)
+# Copy Whitepapers into reports dir
+src_wp = BASE / 'Whitepapers'
+dst_wp = reports_dir / 'Whitepapers'
+if src_wp.exists():
+  if dst_wp.exists():
+    shutil.rmtree(dst_wp)
+  shutil.copytree(src_wp, dst_wp)
+# Copy visuals into reports dir
+src_vis = BASE / 'visuals'
+dst_vis = reports_dir / 'visuals'
+if src_vis.exists():
+  if dst_vis.exists():
+    shutil.rmtree(dst_vis)
+  shutil.copytree(src_vis, dst_vis)
+reports_output = reports_dir / 'executive-dashboard.html'
+reports_output.write_text(html, encoding='utf-8')
+written_paths.append(reports_output)
+
 # Additionally write to OUTPUT_DIR when provided (and copy assets)
 if OUTPUT_DIR:
   out_dir = BASE / OUTPUT_DIR
@@ -422,8 +443,10 @@ if OUTPUT_DIR:
     if dst_vis.exists():
       shutil.rmtree(dst_vis)
     shutil.copytree(src_vis, dst_vis)
-  reports_output = out_dir / 'executive-dashboard.html'
-  reports_output.write_text(html, encoding='utf-8')
-  written_paths.append(reports_output)
+  # Avoid duplicating the reports write if OUTPUT_DIR is 'reports'
+  target_output = out_dir / 'executive-dashboard.html'
+  if out_dir.resolve() != reports_dir.resolve():
+    target_output.write_text(html, encoding='utf-8')
+    written_paths.append(target_output)
 
 print("Wrote dashboard to: " + ", ".join(str(p) for p in written_paths))

@@ -213,17 +213,22 @@ def build_overpayment_line_chart(df: pd.DataFrame, title: str) -> go.Figure:
   x = pd.to_datetime(df['Date of Client Delivery'])
   y = df['Total_Overpayment']
   text = df['ConceptLabels']
+  # Position labels below the marker if near the top to avoid clipping
+  top_threshold = 10_800_000  # 90% of 12M
+  text_positions = ['bottom center' if (pd.notna(v) and v >= top_threshold) else 'top center' for v in y]
   fig.add_trace(go.Scatter(
     x=x,
     y=y,
     mode='lines+markers+text',
     text=text,
-    textposition='top center',
+    textposition=text_positions,
+    textfont=dict(size=11),
+    cliponaxis=False,
     hovertemplate='<b>%{x|%Y-%m-%d}</b><br>Total Overpayment: $%{y:,}<br>%{text}<extra></extra>'
   ))
   fig.update_layout(
     title=title,
-    margin=dict(l=40, r=40, t=60, b=40),
+    margin=dict(l=60, r=60, t=100, b=60),
     xaxis_title='Date of Client Delivery',
     yaxis_title='Total Overpayment ($)',
     showlegend=False

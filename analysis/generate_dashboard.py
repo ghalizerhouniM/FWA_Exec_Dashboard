@@ -306,11 +306,12 @@ concepts_df = presented_hits[['Concept', 'Date of Client Delivery', 'Description
 concepts_df['Date of Client Delivery'] = pd.to_datetime(concepts_df['Date of Client Delivery']).dt.date
 concepts_df = concepts_df.sort_values('Date of Client Delivery')
 def _concept_pdf_link(name: str) -> str:
-  # Use absolute site path or configured BASE_PATH for subpath hosting
-  prefix = f"{BASE_PATH}" if BASE_PATH else ''
-  href = f"{prefix}/Whitepapers/{name}.pdf"
+  # Prefer relative links so both root and reports pages work; allow BASE_PATH override
+  href = f"{BASE_PATH}/Whitepapers/{name}.pdf" if BASE_PATH else f"Whitepapers/{name}.pdf"
   return f"<a href='{href}' target='_blank'>{name}</a>"
-concepts_df['White paper'] = concepts_df['Concept'].apply(lambda n: f"<a href='{(BASE_PATH + '/Whitepapers/' + n) if BASE_PATH else '/Whitepapers/' + n}.pdf' target='_blank'>📄</a>")
+concepts_df['White paper'] = concepts_df['Concept'].apply(
+  lambda n: f"<a href='{(BASE_PATH + '/Whitepapers/' + n + '.pdf') if BASE_PATH else 'Whitepapers/' + n + '.pdf'}' target='_blank'>📄</a>"
+)
 # Keep concept names as plain text (no link)
 concepts_df = concepts_df[['White paper', 'Concept', 'Date of Client Delivery', 'Description']]
 concept_table_html = concepts_df.to_html(index=False, classes=['concept-table'], escape=False)

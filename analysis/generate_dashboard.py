@@ -380,7 +380,7 @@ html = f"""
   </div>
 
   <h2>Live Tracker — Estimated Identified Overpayment Over Time</h2>
-  <p class='small'>Concept names are labeled at each data point.</p>
+  <p class='small'>Live tracking of total overpayments identified over time.</p>
   <h3>Delivery Cadence</h3>
   <p class='small'>Days since baseline (2025-11-05); average successive cadence: <strong>{avg_interval_days:.1f} days</strong>.</p>
   <div class='table-wrap'>

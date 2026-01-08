@@ -3,3 +3,4 @@ Intravitreal_injection_EM,Providers billing intravitreal injections (67028) and 
 Skin_graft,"Providers with high paid amounts for selected skin graft/substitute codes (Q4164, Q4186, Q4205, Q4217, Q4253); flagged if in the top 10%.",11/5/25,1,1,1,"$1,612,943 ","$1,614,414 ","$1,612,943 ","$1,612,943 "
 Intravitreal_injection_2,Providers billing intravitreal injections (67028) with drug J-codes but without relevant ophthalmologic diagnoses; flagged if in the top 10% by paid amount.,11/5/25,3,383,478,"$701,264 ","$708,177 ","$233,755 ","$1,831 "
 DME_location,Providers billing DME (L-codes) where the member state differs from the provider state.,12/17/25,6,"5,674","5,104","$881,646 ","$1,094,457 ","$146,941 ",$155 
+Pulm_Diag_EM,"Providers billing pulmonary diagnostic tests (e.g., 94010 to 94729) and E/M codes on the same claim; flagged if in the top 10% by paid amount.",1/7/26,29,7302,5064,"$793,142 ","$891,190 ","$146,941 ",$155 

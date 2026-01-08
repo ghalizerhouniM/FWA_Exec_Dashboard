@@ -42,6 +42,10 @@ provider_hits = pd.read_csv(
   encoding='latin1'
 )
 
+# Normalize column headers (strip accidental leading/trailing spaces)
+for df in (all_hits, presented_hits, provider_hits):
+  df.columns = df.columns.str.strip()
+
 # Clean currency columns across all dataframes
 for df in (all_hits, presented_hits, provider_hits):
     for col in df.columns:
@@ -224,9 +228,9 @@ def build_overpayment_line_chart(df: pd.DataFrame, title: str) -> go.Figure:
     yaxis_title='Total Overpayment ($)',
     showlegend=False
   )
-  # Pad x-range by 7 days on each side
+  # Pad x-range by 10 days on each side
   min_d, max_d = x.min(), x.max()
-  fig.update_xaxes(range=[min_d - timedelta(days=7), max_d + timedelta(days=7)])
+  fig.update_xaxes(range=[min_d - timedelta(days=10), max_d + timedelta(days=10)])
   # Fix y-range to 0..12M
   fig.update_yaxes(range=[0, 12_000_000])
   return fig
@@ -394,6 +398,13 @@ html = f"""
 </html>
 """
 
+# Always write root-level dashboard
+root_output = BASE / 'executive-dashboard.html'
+root_output.write_text(html, encoding='utf-8')
+
+written_paths = [root_output]
+
+# Additionally write to OUTPUT_DIR when provided (and copy assets)
 if OUTPUT_DIR:
   out_dir = BASE / OUTPUT_DIR
   out_dir.mkdir(parents=True, exist_ok=True)
@@ -401,7 +412,6 @@ if OUTPUT_DIR:
   src_wp = BASE / 'Whitepapers'
   dst_wp = out_dir / 'Whitepapers'
   if src_wp.exists():
-    # Copy directory tree; replace existing if present
     if dst_wp.exists():
       shutil.rmtree(dst_wp)
     shutil.copytree(src_wp, dst_wp)
@@ -412,8 +422,8 @@ if OUTPUT_DIR:
     if dst_vis.exists():
       shutil.rmtree(dst_vis)
     shutil.copytree(src_vis, dst_vis)
-  output_path = out_dir / 'executive-dashboard.html'
-else:
-  output_path = BASE / 'executive-dashboard.html'
-output_path.write_text(html, encoding='utf-8')
-print(f"Wrote dashboard to {output_path}")
+  reports_output = out_dir / 'executive-dashboard.html'
+  reports_output.write_text(html, encoding='utf-8')
+  written_paths.append(reports_output)
+
+print("Wrote dashboard to: " + ", ".join(str(p) for p in written_paths))

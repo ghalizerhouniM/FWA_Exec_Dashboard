@@ -151,14 +151,34 @@ def _date_summary(df: pd.DataFrame) -> pd.DataFrame:
   d['Date of Client Delivery'] = pd.to_datetime(d['Date of Client Delivery'], errors='coerce')
   d = d.dropna(subset=['Date of Client Delivery'])
   d['Concept'] = d['Concept'].fillna('')
-  summary = (d.groupby('Date of Client Delivery')
-               .agg(
-                 Total_Overpayment=('Total Overpayment', 'sum'),
-                 Concepts=('Concept', lambda s: ', '.join(sorted({c for c in s if c})))
-               )
-               .reset_index()
-               .sort_values('Date of Client Delivery'))
-  summary['Label'] = summary.apply(lambda r: f"{r['Concepts']}<br>${r['Total_Overpayment']:,.0f}", axis=1)
+  # Per-date, per-concept sums
+  per_concept = (
+    d.groupby(['Date of Client Delivery', 'Concept'])['Total Overpayment']
+     .sum()
+     .reset_index()
+  )
+  per_concept = per_concept[per_concept['Concept'] != '']
+  # Build labels with comma-separated concept names and total per date in parentheses
+  names_by_date = (
+    per_concept.groupby('Date of Client Delivery')['Concept']
+      .apply(lambda s: ', '.join(sorted(set(s))))
+      .rename('ConceptNames')
+      .reset_index()
+  )
+  # Total overpayment per date
+  totals_by_date = (
+    per_concept.groupby('Date of Client Delivery')['Total Overpayment']
+      .sum()
+      .rename('Total_Overpayment')
+      .reset_index()
+  )
+  summary = totals_by_date.merge(names_by_date, on='Date of Client Delivery', how='left')
+  _fmt_cur = lambda x: f"${x:,.0f}" if pd.notna(x) else "—"
+  summary['ConceptLabels'] = summary.apply(
+    lambda r: f"{r['ConceptNames']} ({_fmt_cur(r['Total_Overpayment'])})" if pd.notna(r['ConceptNames']) else f"({_fmt_cur(r['Total_Overpayment'])})",
+    axis=1
+  )
+  summary = summary.sort_values('Date of Client Delivery')
   return summary
 
 presented_summary = _date_summary(presented_hits)
@@ -179,6 +199,43 @@ def build_timeline_html(df: pd.DataFrame, title: str, line_color: str = '#94a3b8
     items.append(f"<div class='timeline-label' style='left:{pos}%'>{label}</div><div class='timeline-tick' style='left:{pos}%; background:{tick_color}'></div>")
   line_style = f"background:{line_color}"
   return f"<div class='timeline'><div class='timeline-title'>{title}</div><div class='timeline-line' style='{line_style}'>{''.join(items)}</div></div>"
+
+# Line charts: Total Overpayment over time with concept labels
+def build_overpayment_line_chart(df: pd.DataFrame, title: str) -> go.Figure:
+  fig = go.Figure()
+  if df.empty:
+    fig.update_layout(title=title)
+    return fig
+  x = pd.to_datetime(df['Date of Client Delivery'])
+  y = df['Total_Overpayment']
+  text = df['ConceptLabels']
+  fig.add_trace(go.Scatter(
+    x=x,
+    y=y,
+    mode='lines+markers+text',
+    text=text,
+    textposition='top center',
+    hovertemplate='<b>%{x|%Y-%m-%d}</b><br>Total Overpayment: $%{y:,}<br>%{text}<extra></extra>'
+  ))
+  fig.update_layout(
+    title=title,
+    margin=dict(l=40, r=40, t=60, b=40),
+    xaxis_title='Date of Client Delivery',
+    yaxis_title='Total Overpayment ($)',
+    showlegend=False
+  )
+  # Pad x-range by 7 days on each side
+  min_d, max_d = x.min(), x.max()
+  fig.update_xaxes(range=[min_d - timedelta(days=7), max_d + timedelta(days=7)])
+  # Fix y-range to 0..12M
+  fig.update_yaxes(range=[0, 12_000_000])
+  return fig
+
+fig_presented_line = build_overpayment_line_chart(presented_summary, 'Total Overpayment over Time for Presented Hits')
+fig_all_line = build_overpayment_line_chart(all_summary, 'Total Overpayment over Time for All Identified Hits')
+
+presented_line_html = pio.to_html(fig_presented_line, include_plotlyjs='cdn', full_html=False, div_id='overpayment_presented')
+all_line_html = pio.to_html(fig_all_line, include_plotlyjs=False, full_html=False, div_id='overpayment_all')
 
 # Build HTML report
 style = """
@@ -203,13 +260,11 @@ th { background: #eff6ff; }
 .timeline-tick { position: absolute; top: -6px; width: 12px; height: 12px; background: #0b5cab; border-radius: 50%; transform: translateX(-50%); }
 .timeline-label { position: absolute; top: -36px; transform: translateX(-50%); white-space: normal; font-size: 0.85em; color: #334155; background: #f8fafc; padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 6px; max-width: 320px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
 .brand-bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 8px; }
-.brand-bar img { height: 44px; object-fit: contain; }
+.brand-bar img { height: 96px; object-fit: contain; }
 </style>
 """
-
-# Format large integers with commas
-fmt_int = lambda x: f"{int(x):,}" if pd.notna(x) else "—"
 fmt_cur = lambda x: f"${x:,.0f}" if pd.notna(x) else "—"
+fmt_int = lambda x: f"{int(x):,}" if pd.notna(x) else "—"
 today_str = pd.Timestamp.today().strftime('%B %d, %Y')
 
 summary_html = f"""
@@ -278,8 +333,6 @@ progress_table_html = progress_df.to_html(index=False)
 
 paid_hist_html = pio.to_html(fig_paid_hist, include_plotlyjs='cdn', full_html=False, div_id='paid_hist')
 claims_hist_html = pio.to_html(fig_claims_hist, include_plotlyjs=False, full_html=False, div_id='claims_hist')
-presented_tracker_html = build_timeline_html(presented_summary, 'Arrow of Time — Presented to BCBS NC', line_color='#cbd5e1', tick_color='#0b5cab')
-all_tracker_html = build_timeline_html(all_summary, 'Arrow of Time — All Identified Hits', line_color='#cbd5e1', tick_color='#2563eb')
 
 html = f"""
 <!doctype html>
@@ -317,11 +370,17 @@ html = f"""
     {all_table_html}
   </div>
 
-  <h2>Delivery Cadence</h2>
+  <h2>Live Tracker — Estimated Identified Overpayment Over Time</h2>
+  <p class='small'>Concept names are labeled at each data point.</p>
+  <h3>Delivery Cadence</h3>
   <p class='small'>Days since baseline (2025-11-05); average successive cadence: <strong>{avg_interval_days:.1f} days</strong>.</p>
   <div class='table-wrap'>
     {progress_table_html}
   </div>
+  <h3>Presented Hits</h3>
+  {presented_line_html}
+  <h3>All Identified Hits</h3>
+  {all_line_html}
 
   
 

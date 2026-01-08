@@ -136,7 +136,12 @@ fig_claims_hist = px.histogram(
   title='Distribution of Number of Claim Hits per Provider',
   labels={'NumberOfClaimHits': 'Number of Claim Hits'}
 )
-fig_claims_hist.update_layout(margin=dict(l=40, r=40, t=60, b=40), legend_title_text='Concept')
+fig_claims_hist.update_layout(
+  margin=dict(l=40, r=40, t=60, b=40),
+  legend_title_text='Concept',
+  xaxis_title='Number of Claim Hits',
+  yaxis_title='Count of Providers'
+)
 fig_claims_hist.update_traces(opacity=0.75)
 
 # Live tracker: Simplified "arrow of time" timelines
@@ -197,6 +202,8 @@ th { background: #eff6ff; }
 .timeline-line::after { content: ''; position: absolute; right: -12px; top: -6px; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-left: 12px solid #94a3b8; }
 .timeline-tick { position: absolute; top: -6px; width: 12px; height: 12px; background: #0b5cab; border-radius: 50%; transform: translateX(-50%); }
 .timeline-label { position: absolute; top: -36px; transform: translateX(-50%); white-space: normal; font-size: 0.85em; color: #334155; background: #f8fafc; padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 6px; max-width: 320px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+.brand-bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 8px; }
+.brand-bar img { height: 44px; object-fit: contain; }
 </style>
 """
 
@@ -284,7 +291,11 @@ html = f"""
 </head>
 <body>
 <div class='container'>
-  <h1>Executive Tracking Dashboard — FWA Deliverables (BCBS NC)</h1>
+  <div class='brand-bar'>
+    <img src='visuals/Machinify_Logo.jpg' alt='Machinify Logo'>
+    <img src='visuals/BCBS_NorthCarolina_Logo.png' alt='BCBS North Carolina Logo'>
+  </div>
+  <h1>FWA Deliverables (BCBS NC) —  Executive Tracking Dashboard</h1>
   <p class='small'>This dashboard summarizes delivered FWA concepts, key statistics, and provider-level distributions.</p>
   <p class='small'>As of {today_str}</p>
 
@@ -335,6 +346,13 @@ if OUTPUT_DIR:
     if dst_wp.exists():
       shutil.rmtree(dst_wp)
     shutil.copytree(src_wp, dst_wp)
+  # Copy visuals into output dir for static hosting of logos
+  src_vis = BASE / 'visuals'
+  dst_vis = out_dir / 'visuals'
+  if src_vis.exists():
+    if dst_vis.exists():
+      shutil.rmtree(dst_vis)
+    shutil.copytree(src_vis, dst_vis)
   output_path = out_dir / 'executive-dashboard.html'
 else:
   output_path = BASE / 'executive-dashboard.html'

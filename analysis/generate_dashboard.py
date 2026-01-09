@@ -188,6 +188,17 @@ def _date_summary(df: pd.DataFrame) -> pd.DataFrame:
 presented_summary = _date_summary(presented_hits)
 all_summary = _date_summary(all_hits)
 
+# Compute cumulative overpayment and update labels to use cumulative values
+for _df in (presented_summary, all_summary):
+  if not _df.empty:
+    _df['Cumulative_Overpayment'] = _df['Total_Overpayment'].cumsum()
+    _fmt_cur = lambda x: f"${x:,.0f}" if pd.notna(x) else "—"
+    if 'ConceptNames' in _df.columns:
+      _df['ConceptLabels'] = _df.apply(
+        lambda r: f"{r['ConceptNames']} ({_fmt_cur(r['Cumulative_Overpayment'])})" if pd.notna(r['ConceptNames']) else f"({_fmt_cur(r['Cumulative_Overpayment'])})",
+        axis=1
+      )
+
 def build_timeline_html(df: pd.DataFrame, title: str, line_color: str = '#94a3b8', tick_color: str = '#0b5cab') -> str:
   if df.empty:
     return f"<div class='timeline'><div class='timeline-title'>{title}</div><div class='small'>No data available.</div></div>"
@@ -205,16 +216,17 @@ def build_timeline_html(df: pd.DataFrame, title: str, line_color: str = '#94a3b8
   return f"<div class='timeline'><div class='timeline-title'>{title}</div><div class='timeline-line' style='{line_style}'>{''.join(items)}</div></div>"
 
 # Line charts: Total Overpayment over time with concept labels
-def build_overpayment_line_chart(df: pd.DataFrame, title: str) -> go.Figure:
+def build_overpayment_line_chart(df: pd.DataFrame, title: str, y_range: tuple | None = None) -> go.Figure:
   fig = go.Figure()
   if df.empty:
     fig.update_layout(title=title)
     return fig
   x = pd.to_datetime(df['Date of Client Delivery'])
-  y = df['Total_Overpayment']
+  y = df['Cumulative_Overpayment'] if 'Cumulative_Overpayment' in df.columns else df['Total_Overpayment']
   text = df['ConceptLabels']
   # Position labels below the marker if near the top to avoid clipping
-  top_threshold = 10_800_000  # 90% of 12M
+  ymax = (y_range[1] if (y_range and len(y_range) == 2) else 12_000_000)
+  top_threshold = 0.9 * ymax
   text_positions = ['bottom center' if (pd.notna(v) and v >= top_threshold) else 'top center' for v in y]
   fig.add_trace(go.Scatter(
     x=x,
@@ -224,24 +236,27 @@ def build_overpayment_line_chart(df: pd.DataFrame, title: str) -> go.Figure:
     textposition=text_positions,
     textfont=dict(size=11),
     cliponaxis=False,
-    hovertemplate='<b>%{x|%Y-%m-%d}</b><br>Total Overpayment: $%{y:,}<br>%{text}<extra></extra>'
+    hovertemplate='<b>%{x|%Y-%m-%d}</b><br>Cumulative Overpayment: $%{y:,}<br>%{text}<extra></extra>'
   ))
   fig.update_layout(
     title=title,
     margin=dict(l=60, r=60, t=100, b=60),
     xaxis_title='Date of Client Delivery',
-    yaxis_title='Total Overpayment ($)',
+    yaxis_title='Cumulative Overpayment ($)',
     showlegend=False
   )
   # Pad x-range by 10 days on each side
   min_d, max_d = x.min(), x.max()
   fig.update_xaxes(range=[min_d - timedelta(days=10), max_d + timedelta(days=10)])
-  # Fix y-range to 0..12M
-  fig.update_yaxes(range=[0, 12_000_000])
+  # Fix y-range if provided, else default to 0..12M
+  if y_range:
+    fig.update_yaxes(range=list(y_range))
+  else:
+    fig.update_yaxes(range=[0, 12_000_000])
   return fig
 
-fig_presented_line = build_overpayment_line_chart(presented_summary, 'Total Overpayment over Time for Presented Hits')
-fig_all_line = build_overpayment_line_chart(all_summary, 'Total Overpayment over Time for All Identified Hits')
+fig_presented_line = build_overpayment_line_chart(presented_summary, 'Cumulative Overpayment over Time for Presented Hits', y_range=(0, 7_000_000))
+fig_all_line = build_overpayment_line_chart(all_summary, 'Cumulative Overpayment over Time for All Identified Hits', y_range=(0, 24_000_000))
 
 presented_line_html = pio.to_html(fig_presented_line, include_plotlyjs='cdn', full_html=False, div_id='overpayment_presented')
 all_line_html = pio.to_html(fig_all_line, include_plotlyjs=False, full_html=False, div_id='overpayment_all')
@@ -380,7 +395,7 @@ html = f"""
     {all_table_html}
   </div>
 
-  <h2>Live Tracker — Estimated Identified Overpayment Over Time</h2>
+  <h2>Live Tracker — Cumulative Estimated Overpayment Over Time</h2>
   <p class='small'>Live tracking of total overpayments identified over time.</p>
   <h3>Delivery Cadence</h3>
   <p class='small'>Days since baseline (2025-11-05); average successive cadence: <strong>{avg_interval_days:.1f} days</strong>.</p>

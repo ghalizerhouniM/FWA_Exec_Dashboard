@@ -120,7 +120,7 @@ fig_paid_hist = px.histogram(
   color='Concept',
   barmode='overlay',
   nbins=50,
-  title='Distribution of Total Overpayment per Provider'
+  title='Distribution of Providers per Total Overpayment'
 )
 fig_paid_hist.update_layout(
   margin=dict(l=40, r=40, t=60, b=40),
@@ -137,7 +137,7 @@ fig_claims_hist = px.histogram(
   color='Concept',
   barmode='overlay',
   nbins=50,
-  title='Distribution of Number of Claim Hits per Provider',
+  title='Distribution of Providers per Number of Claim Hits',
   labels={'NumberOfClaimHits': 'Number of Claim Hits'}
 )
 fig_claims_hist.update_layout(
@@ -396,7 +396,7 @@ html = f"""
   </div>
 
   <h2>Live Tracker — Cumulative Estimated Overpayment Over Time</h2>
-  <p class='small'>Live tracking of total overpayments identified over time.</p>
+  <p class='small'>Live tracking of cumulative overpayments identified over time.</p>
   <h3>Delivery Cadence</h3>
   <p class='small'>Days since baseline (2025-11-05); average successive cadence: <strong>{avg_interval_days:.1f} days</strong>.</p>
   <div class='table-wrap'>
@@ -410,7 +410,7 @@ html = f"""
   
 
   <h2>Provider-Level Distributions Across All Identified Hits</h2>
-  <p class='small'>Distribution of Total Overpayment and Number of Claim Hits per provider, shown by concept.</p>
+  <p class='small'>Distribution of Providers by the total overpayment and number of claim hits shown by concept.</p>
   {paid_hist_html}
   {claims_hist_html}
 

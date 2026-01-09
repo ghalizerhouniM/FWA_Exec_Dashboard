@@ -2,6 +2,7 @@ import os
 import shutil
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import plotly.io as pio
 from pathlib import Path
 from datetime import timedelta
@@ -34,12 +35,16 @@ presented_hits = pd.read_csv(
 )
 
 provider_hits = pd.read_csv(
-  DATA_DIR / 'Presented Provider Hits.csv',
+  DATA_DIR / 'All Provider Hits.csv',
   dtype={'Billing NPI': str},
   thousands=',',
   engine='python',
   encoding='latin1'
 )
+
+# Normalize column headers (strip accidental leading/trailing spaces)
+for df in (all_hits, presented_hits, provider_hits):
+  df.columns = df.columns.str.strip()
 
 # Clean currency columns across all dataframes
 for df in (all_hits, presented_hits, provider_hits):
@@ -135,8 +140,126 @@ fig_claims_hist = px.histogram(
   title='Distribution of Number of Claim Hits per Provider',
   labels={'NumberOfClaimHits': 'Number of Claim Hits'}
 )
-fig_claims_hist.update_layout(margin=dict(l=40, r=40, t=60, b=40), legend_title_text='Concept')
+fig_claims_hist.update_layout(
+  margin=dict(l=40, r=40, t=60, b=40),
+  legend_title_text='Concept',
+  xaxis_title='Number of Claim Hits',
+  yaxis_title='Count of Providers'
+)
 fig_claims_hist.update_traces(opacity=0.75)
+
+# Live tracker: Simplified "arrow of time" timelines
+# Aggregate by delivery date: sum overpayment, list concepts per date
+def _date_summary(df: pd.DataFrame) -> pd.DataFrame:
+  d = df[['Date of Client Delivery', 'Concept', 'Total Overpayment']].copy()
+  d['Date of Client Delivery'] = pd.to_datetime(d['Date of Client Delivery'], errors='coerce')
+  d = d.dropna(subset=['Date of Client Delivery'])
+  d['Concept'] = d['Concept'].fillna('')
+  # Per-date, per-concept sums
+  per_concept = (
+    d.groupby(['Date of Client Delivery', 'Concept'])['Total Overpayment']
+     .sum()
+     .reset_index()
+  )
+  per_concept = per_concept[per_concept['Concept'] != '']
+  # Build labels with comma-separated concept names and total per date in parentheses
+  names_by_date = (
+    per_concept.groupby('Date of Client Delivery')['Concept']
+      .apply(lambda s: ', '.join(sorted(set(s))))
+      .rename('ConceptNames')
+      .reset_index()
+  )
+  # Total overpayment per date
+  totals_by_date = (
+    per_concept.groupby('Date of Client Delivery')['Total Overpayment']
+      .sum()
+      .rename('Total_Overpayment')
+      .reset_index()
+  )
+  summary = totals_by_date.merge(names_by_date, on='Date of Client Delivery', how='left')
+  _fmt_cur = lambda x: f"${x:,.0f}" if pd.notna(x) else "—"
+  summary['ConceptLabels'] = summary.apply(
+    lambda r: f"{r['ConceptNames']} ({_fmt_cur(r['Total_Overpayment'])})" if pd.notna(r['ConceptNames']) else f"({_fmt_cur(r['Total_Overpayment'])})",
+    axis=1
+  )
+  summary = summary.sort_values('Date of Client Delivery')
+  return summary
+
+presented_summary = _date_summary(presented_hits)
+all_summary = _date_summary(all_hits)
+
+# Compute cumulative overpayment and update labels to use cumulative values
+for _df in (presented_summary, all_summary):
+  if not _df.empty:
+    _df['Cumulative_Overpayment'] = _df['Total_Overpayment'].cumsum()
+    _fmt_cur = lambda x: f"${x:,.0f}" if pd.notna(x) else "—"
+    if 'ConceptNames' in _df.columns:
+      _df['ConceptLabels'] = _df.apply(
+        lambda r: f"{r['ConceptNames']} ({_fmt_cur(r['Cumulative_Overpayment'])})" if pd.notna(r['ConceptNames']) else f"({_fmt_cur(r['Cumulative_Overpayment'])})",
+        axis=1
+      )
+
+def build_timeline_html(df: pd.DataFrame, title: str, line_color: str = '#94a3b8', tick_color: str = '#0b5cab') -> str:
+  if df.empty:
+    return f"<div class='timeline'><div class='timeline-title'>{title}</div><div class='small'>No data available.</div></div>"
+  dates = pd.to_datetime(df['Date of Client Delivery'])
+  min_d, max_d = dates.min(), dates.max()
+  span = (max_d - min_d).days or 1
+  items = []
+  for _, r in df.iterrows():
+    d = pd.to_datetime(r['Date of Client Delivery'])
+    pos = ((d - min_d).days / span) * 100
+    date_str = pd.to_datetime(r['Date of Client Delivery']).date().isoformat()
+    label = f"{date_str}<br>{r['Label']}"
+    items.append(f"<div class='timeline-label' style='left:{pos}%'>{label}</div><div class='timeline-tick' style='left:{pos}%; background:{tick_color}'></div>")
+  line_style = f"background:{line_color}"
+  return f"<div class='timeline'><div class='timeline-title'>{title}</div><div class='timeline-line' style='{line_style}'>{''.join(items)}</div></div>"
+
+# Line charts: Total Overpayment over time with concept labels
+def build_overpayment_line_chart(df: pd.DataFrame, title: str, y_range: tuple | None = None) -> go.Figure:
+  fig = go.Figure()
+  if df.empty:
+    fig.update_layout(title=title)
+    return fig
+  x = pd.to_datetime(df['Date of Client Delivery'])
+  y = df['Cumulative_Overpayment'] if 'Cumulative_Overpayment' in df.columns else df['Total_Overpayment']
+  text = df['ConceptLabels']
+  # Position labels below the marker if near the top to avoid clipping
+  ymax = (y_range[1] if (y_range and len(y_range) == 2) else 12_000_000)
+  top_threshold = 0.9 * ymax
+  text_positions = ['bottom center' if (pd.notna(v) and v >= top_threshold) else 'top center' for v in y]
+  fig.add_trace(go.Scatter(
+    x=x,
+    y=y,
+    mode='lines+markers+text',
+    text=text,
+    textposition=text_positions,
+    textfont=dict(size=11),
+    cliponaxis=False,
+    hovertemplate='<b>%{x|%Y-%m-%d}</b><br>Cumulative Overpayment: $%{y:,}<br>%{text}<extra></extra>'
+  ))
+  fig.update_layout(
+    title=title,
+    margin=dict(l=60, r=60, t=100, b=60),
+    xaxis_title='Date of Client Delivery',
+    yaxis_title='Cumulative Overpayment ($)',
+    showlegend=False
+  )
+  # Pad x-range by 10 days on each side
+  min_d, max_d = x.min(), x.max()
+  fig.update_xaxes(range=[min_d - timedelta(days=10), max_d + timedelta(days=10)])
+  # Fix y-range if provided, else default to 0..12M
+  if y_range:
+    fig.update_yaxes(range=list(y_range))
+  else:
+    fig.update_yaxes(range=[0, 12_000_000])
+  return fig
+
+fig_presented_line = build_overpayment_line_chart(presented_summary, 'Cumulative Overpayment over Time for Presented Hits', y_range=(0, 7_000_000))
+fig_all_line = build_overpayment_line_chart(all_summary, 'Cumulative Overpayment over Time for All Identified Hits', y_range=(0, 24_000_000))
+
+presented_line_html = pio.to_html(fig_presented_line, include_plotlyjs='cdn', full_html=False, div_id='overpayment_presented')
+all_line_html = pio.to_html(fig_all_line, include_plotlyjs=False, full_html=False, div_id='overpayment_all')
 
 # Build HTML report
 style = """
@@ -153,12 +276,19 @@ th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; }
 th { background: #eff6ff; }
 .caption { font-weight: 600; margin: 8px 0; }
 .note { background: #fff7ed; border: 1px solid #fed7aa; padding: 8px; border-radius: 6px; }
+.chart-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; align-items: start; }
+.timeline { margin: 8px 0 24px; }
+.timeline-title { font-weight: 600; margin-bottom: 6px; }
+.timeline-line { position: relative; height: 4px; background: #e2e8f0; border-radius: 2px; }
+.timeline-line::after { content: ''; position: absolute; right: -12px; top: -6px; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-left: 12px solid #94a3b8; }
+.timeline-tick { position: absolute; top: -6px; width: 12px; height: 12px; background: #0b5cab; border-radius: 50%; transform: translateX(-50%); }
+.timeline-label { position: absolute; top: -36px; transform: translateX(-50%); white-space: normal; font-size: 0.85em; color: #334155; background: #f8fafc; padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 6px; max-width: 320px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+.brand-bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 8px; }
+.brand-bar img { height: 96px; object-fit: contain; }
 </style>
 """
-
-# Format large integers with commas
-fmt_int = lambda x: f"{int(x):,}" if pd.notna(x) else "—"
 fmt_cur = lambda x: f"${x:,.0f}" if pd.notna(x) else "—"
+fmt_int = lambda x: f"{int(x):,}" if pd.notna(x) else "—"
 today_str = pd.Timestamp.today().strftime('%B %d, %Y')
 
 summary_html = f"""
@@ -191,11 +321,12 @@ concepts_df = presented_hits[['Concept', 'Date of Client Delivery', 'Description
 concepts_df['Date of Client Delivery'] = pd.to_datetime(concepts_df['Date of Client Delivery']).dt.date
 concepts_df = concepts_df.sort_values('Date of Client Delivery')
 def _concept_pdf_link(name: str) -> str:
-  # Use absolute site path or configured BASE_PATH for subpath hosting
-  prefix = f"{BASE_PATH}" if BASE_PATH else ''
-  href = f"{prefix}/Whitepapers/{name}.pdf"
+  # Prefer relative links so both root and reports pages work; allow BASE_PATH override
+  href = f"{BASE_PATH}/Whitepapers/{name}.pdf" if BASE_PATH else f"Whitepapers/{name}.pdf"
   return f"<a href='{href}' target='_blank'>{name}</a>"
-concepts_df['White paper'] = concepts_df['Concept'].apply(lambda n: f"<a href='{(BASE_PATH + '/Whitepapers/' + n) if BASE_PATH else '/Whitepapers/' + n}.pdf' target='_blank'>📄</a>")
+concepts_df['White paper'] = concepts_df['Concept'].apply(
+  lambda n: f"<a href='{(BASE_PATH + '/Whitepapers/' + n + '.pdf') if BASE_PATH else 'Whitepapers/' + n + '.pdf'}' target='_blank'>📄</a>"
+)
 # Keep concept names as plain text (no link)
 concepts_df = concepts_df[['White paper', 'Concept', 'Date of Client Delivery', 'Description']]
 concept_table_html = concepts_df.to_html(index=False, classes=['concept-table'], escape=False)
@@ -238,35 +369,47 @@ html = f"""
 </head>
 <body>
 <div class='container'>
-  <h1>Executive Tracking Dashboard — FWA Deliverables (BCBS NC)</h1>
+  <div class='brand-bar'>
+    <img src='visuals/Machinify_Logo.jpg' alt='Machinify Logo'>
+    <img src='visuals/BCBS_NorthCarolina_Logo.png' alt='BCBS North Carolina Logo'>
+  </div>
+  <h1>FWA Deliverables (BCBS NC) —  Executive Tracking Dashboard</h1>
   <p class='small'>This dashboard summarizes delivered FWA concepts, key statistics, and provider-level distributions.</p>
   <p class='small'>As of {today_str}</p>
 
   <h2>Aggregate Summary</h2>
   {summary_html}
 
-  <h2>FWA Concepts Presented</h2>
+  <h2>FWA Concepts Presented to BCBS NC</h2>
   <div class='table-wrap'>
     {concept_table_html}
   </div>
 
-  <h2>Concept-Level Statistics — Presented Hits</h2>
+  <h2>Concept-Level Statistics — Presented Hits to BCBS NC</h2>
   <div class='table-wrap'>
     {presented_table_html}
   </div>
 
-  <h2>Concept-Level Statistics — All Hits</h2>
+  <h2>Concept-Level Statistics — All Identified Hits</h2>
   <div class='table-wrap'>
     {all_table_html}
   </div>
 
-  <h2>Delivery Cadence</h2>
+  <h2>Live Tracker — Cumulative Estimated Overpayment Over Time</h2>
+  <p class='small'>Live tracking of total overpayments identified over time.</p>
+  <h3>Delivery Cadence</h3>
   <p class='small'>Days since baseline (2025-11-05); average successive cadence: <strong>{avg_interval_days:.1f} days</strong>.</p>
   <div class='table-wrap'>
     {progress_table_html}
   </div>
+  <h3>Presented Hits</h3>
+  {presented_line_html}
+  <h3>All Identified Hits</h3>
+  {all_line_html}
 
-  <h2>Provider-Level Distributions</h2>
+  
+
+  <h2>Provider-Level Distributions Across All Identified Hits</h2>
   <p class='small'>Distribution of Total Overpayment and Number of Claim Hits per provider, shown by concept.</p>
   {paid_hist_html}
   {claims_hist_html}
@@ -276,6 +419,34 @@ html = f"""
 </html>
 """
 
+# Always write root-level dashboard
+root_output = BASE / 'executive-dashboard.html'
+root_output.write_text(html, encoding='utf-8')
+
+written_paths = [root_output]
+
+# Always write to reports directory as well
+reports_dir = REPORTS_DIR
+reports_dir.mkdir(parents=True, exist_ok=True)
+# Copy Whitepapers into reports dir
+src_wp = BASE / 'Whitepapers'
+dst_wp = reports_dir / 'Whitepapers'
+if src_wp.exists():
+  if dst_wp.exists():
+    shutil.rmtree(dst_wp)
+  shutil.copytree(src_wp, dst_wp)
+# Copy visuals into reports dir
+src_vis = BASE / 'visuals'
+dst_vis = reports_dir / 'visuals'
+if src_vis.exists():
+  if dst_vis.exists():
+    shutil.rmtree(dst_vis)
+  shutil.copytree(src_vis, dst_vis)
+reports_output = reports_dir / 'executive-dashboard.html'
+reports_output.write_text(html, encoding='utf-8')
+written_paths.append(reports_output)
+
+# Additionally write to OUTPUT_DIR when provided (and copy assets)
 if OUTPUT_DIR:
   out_dir = BASE / OUTPUT_DIR
   out_dir.mkdir(parents=True, exist_ok=True)
@@ -283,12 +454,20 @@ if OUTPUT_DIR:
   src_wp = BASE / 'Whitepapers'
   dst_wp = out_dir / 'Whitepapers'
   if src_wp.exists():
-    # Copy directory tree; replace existing if present
     if dst_wp.exists():
       shutil.rmtree(dst_wp)
     shutil.copytree(src_wp, dst_wp)
-  output_path = out_dir / 'executive-dashboard.html'
-else:
-  output_path = BASE / 'executive-dashboard.html'
-output_path.write_text(html, encoding='utf-8')
-print(f"Wrote dashboard to {output_path}")
+  # Copy visuals into output dir for static hosting of logos
+  src_vis = BASE / 'visuals'
+  dst_vis = out_dir / 'visuals'
+  if src_vis.exists():
+    if dst_vis.exists():
+      shutil.rmtree(dst_vis)
+    shutil.copytree(src_vis, dst_vis)
+  # Avoid duplicating the reports write if OUTPUT_DIR is 'reports'
+  target_output = out_dir / 'executive-dashboard.html'
+  if out_dir.resolve() != reports_dir.resolve():
+    target_output.write_text(html, encoding='utf-8')
+    written_paths.append(target_output)
+
+print("Wrote dashboard to: " + ", ".join(str(p) for p in written_paths))

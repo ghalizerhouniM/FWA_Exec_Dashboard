@@ -10,6 +10,9 @@ This repository contains data assets and a script to generate an executive dashb
 - analysis/generate_dashboard.py (builds the HTML dashboard)
 - reports/executive-dashboard.html (output, created after running the script)
 
+## Live Dashboard
+- View the published report: https://ghalizerhounim.github.io/FWA_Exec_Dashboard/reports/executive-dashboard.html
+
 ## Setup
 1. Create a Python environment (3.10+ recommended) and install dependencies:
 

@@ -1,83 +1,56 @@
-# AI Coding Agent Instructions for Executive Dashboard
+# AI Coding Agent Instructions — Executive Dashboard (FWA)
 
-These instructions make AI agents immediately productive in this dataset-centric workspace. The repo currently contains data assets and whitepapers, with no code or build system.
+Practical guide to build/extend this FWA analytics dashboard. The codebase generates a self-contained HTML dashboard from CSVs and whitepapers using Python + Plotly.
 
 ## Big Picture
-- Purpose: Analyze fraud/waste/abuse (FWA) concepts and summarize provider/claim impacts and paid amounts.
-- Assets:
-  - Summary tables: [All Hits - Summary Statistics.csv](All%20Hits%20-%20Summary%20Statistics.csv), [Presented Hits - Summary Statistics.csv](Presented%20Hits%20-%20Summary%20Statistics.csv)
-  - Provider-level table: [Presented Provider Hits.csv](Presented%20Provider%20Hits.csv)
-  - Concept whitepapers: [Whitepapers](Whitepapers)
-- Common concepts present in all files: `Concept` values like `Intravitreal_injection_EM`, `Skin_graft`, `Intravitreal_injection_2`, `DME_location`.
+- **Purpose**: Track and visualize delivered FWA concepts for BCBS NC — provider impacts, claim counts, overpayments.
+- **Data flow**: [analysis/generate_dashboard.py](analysis/generate_dashboard.py) loads 3 CSVs → cleans currency and dates → aggregates concept-level stats → renders Plotly visuals → writes a single HTML file (and optionally copies whitepapers).
+- **Data assets**:
+    - [All Hits - Summary Statistics.csv](All%20Hits%20-%20Summary%20Statistics.csv) — all detected hits (presented + unpresented)
+    - [Presented Hits - Summary Statistics.csv](Presented%20Hits%20-%20Summary%20Statistics.csv) — delivered concepts + summary metrics
+    - [Presented Provider Hits.csv](Presented%20Provider%20Hits.csv) — provider-level detail for presented concepts
+    - [Whitepapers/](Whitepapers/) — one PDF per concept (e.g., DME_location.pdf)
+- **Join key**: `Concept` links all files.
 
-## Data Conventions and Gotchas
-- Filenames include spaces; quote paths when using CLI or code.
-- Currency/integers: values often include `$`, commas, and trailing spaces (e.g., `" $3,069,990 "`). Strip and convert before numeric ops.
-- Date: `Date of Client Delivery` appears in summary files; parse as dates.
-- IDs: `Billing NPI` should be treated as string to preserve leading zeros.
-- Encoding artifact: E/M code ranges show a replacement char in text (`99202�99215`); treat as ASCII/UTF-8 and keep descriptive text as-is unless cleaning.
-- Schema differences:
-  - [All Hits - Summary Statistics.csv](All%20Hits%20-%20Summary%20Statistics.csv) and [Presented Hits - Summary Statistics.csv](Presented%20Hits%20-%20Summary%20Statistics.csv) share headers like `Number of Provider Hits`, `Number of Claim Hits`, `Number of Members Impacted`, `Total Overpayment`, `Total Paid Amount`.
-  - [Presented Provider Hits.csv](Presented%20Provider%20Hits.csv) has provider granularity: `Billing NPI`, `Total Qualifying Paid Amount`, `Total Claim Paid Amount`.
-- Irregular rows: [Presented Hits - Summary Statistics.csv](Presented%20Hits%20-%20Summary%20Statistics.csv) contains trailing empty lines and an extra trailing column with blanks; use robust CSV parsing.
+## Conventions & Pitfalls
+- **Filenames with spaces**: use `Path()` or quote in shell.
+- **CSV parsing**: always `encoding='latin1'`, `engine='python'`, `thousands=','`.
+- **Currency cleaning**: strip `$`, commas, spaces; then `pd.to_numeric(..., errors='coerce')` across all dataframes.
+- **Preserve NPI zeros**: load provider data with `dtype={'Billing NPI': str}`.
+- **Provider column remaps**: rename provider columns to align visuals:
+    - `Total Qualifying Paid Amount` → `Total Overpayment`
+    - `Number of Claim Hits` → `NumberOfClaimHits`
+- **Irregular CSV**: presented summary has trailing blank rows/columns; code is robust.
 
-## Typical Agent Tasks
-- Load and clean the three CSVs; join on `Concept` to reconcile summary and provider views.
-- Aggregate by `Concept` (e.g., sums of paid amounts, provider counts) and validate against provided summaries.
-- Link `Concept` to relevant whitepaper PDFs in [Whitepapers](Whitepapers) when generating reports.
+## Build & Run
+- Setup (macOS):
+    - `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
+- Generate dashboard from repo root:
+    - `python analysis/generate_dashboard.py`
+- **Output**:
+    - Default: writes [executive-dashboard.html](executive-dashboard.html) at repo root.
+    - With `OUTPUT_DIR`: writes to that subfolder and copies [Whitepapers/](Whitepapers/) into it.
+    - Open locally: `open executive-dashboard.html` (or file in `OUTPUT_DIR`).
 
-## Minimal, Robust Loading (Python/pandas)
-```python
-import pandas as pd
-from pathlib import Path
-base = Path('.')
+## Key Patterns in Code
+- **Aggregate stats**: sum `Total Overpayment`, `Number of Provider Hits`, `Number of Claim Hits` for presented vs all.
+- **Dates**: normalize `Date of Client Delivery` with `pd.to_datetime(..., errors='coerce')`; cadence computed vs baseline 2025-11-05.
+- **Whitepaper links**: build `Whitepapers/{Concept}.pdf` links; prefix with `BASE_PATH` when hosting under a subpath.
+- **Visuals**: use `pio.to_html(fig, include_plotlyjs='cdn')` for first chart, `include_plotlyjs=False` thereafter. See [provider overpayment histogram](analysis/generate_dashboard.py#L86-L112) and [claim hits histogram](analysis/generate_dashboard.py#L114-L133).
+- **Currency display**: format with `f"${x:,.0f}"`; see `format_currency_table()` for consistent table rendering.
 
-all_hits = pd.read_csv(
-    base / 'All Hits - Summary Statistics.csv',
-    thousands=',',
-    dtype={'Number of Provider Hits': 'Int64', 'Number of Claim Hits': 'Int64',
-           'Number of Members Impacted': 'Int64'},
-    parse_dates=['Date of Client Delivery'],
-    engine='python'  # handles edge cases
-)
+## Validation & Cross-Checks
+- Reconcile: sum provider `Total Qualifying Paid Amount` (renamed) ≈ summary `Total Overpayment`.
+- Compare: summary `Number of Provider Hits` vs unique provider `Billing NPI` counts.
+- Spot-check: delivery cadence table and concept list match expected timelines.
 
-presented_hits = pd.read_csv(
-    base / 'Presented Hits - Summary Statistics.csv',
-    thousands=',',
-    parse_dates=['Date of Client Delivery'],
-    engine='python'
-)
+## Extending the Dashboard
+- Add visuals by following Plotly patterns; embed via `pio.to_html(..., full_html=False)` and append to the main HTML f-string.
+- Add concept-level columns using `concept_cols` filtering to remain robust to missing fields.
+- Keep existing styling classes (`container`, `summary`, `card`, `table-wrap`) for visual consistency.
 
-provider_hits = pd.read_csv(
-    base / 'Presented Provider Hits.csv',
-    dtype={'Billing NPI': str},
-    thousands=',',
-    engine='python'
-)
+## Environment Variables
+- `BASE_PATH`: URL prefix for hosted subpaths (affects whitepaper link hrefs).
+- `OUTPUT_DIR`: target folder for output; also triggers copying of [Whitepapers/](Whitepapers/) into the output directory.
 
-# Clean currency columns
-for df in (all_hits, presented_hits, provider_hits):
-    for col in df.columns:
-        if df[col].astype(str).str.contains('\$').any():
-            df[col] = (df[col].astype(str)
-                .str.replace('$', '', regex=False)
-                .str.replace(',', '', regex=False)
-                .str.strip())
-            df[col] = pd.to_numeric(df[col], errors='coerce')
-```
-
-## Patterns and Examples
-- Concepts as join keys: group by `Concept` across files to compare totals.
-- Provider rollups: sum `Total Qualifying Paid Amount` and `Total Claim Paid Amount` in [Presented Provider Hits.csv](Presented%20Provider%20Hits.csv) to cross-check summary totals.
-- Date filtering: use `Date of Client Delivery` to subset recent vs historical deliveries.
-- Whitepaper mapping: each `Concept` has a corresponding PDF in [Whitepapers](Whitepapers) (e.g., `DME_location.pdf`).
-
-## Workflows
-- No build/test system present; analytics run via your chosen tooling (Python, R, or SQL in notebooks).
-- Keep outputs in `reports/` or `analysis/` (create as needed) and reference source filenames.
-- When adding code, prefer small, well-scoped scripts/notebooks that read from these CSVs; avoid heavy frameworks.
-
-## Communication & Deliverables
-- Cite exact files and columns used (link them when possible).
-- Flag any data quality concerns (currency strings, trailing blanks) and document cleaning steps inline.
-- For new analyses, include brief validation comparing provider-level aggregates to summary files.
+If anything here seems unclear or incomplete (e.g., output location expectations, additional metrics to track), tell me what you want to change and I’ll refine these instructions.

@@ -42,6 +42,36 @@ provider_hits = pd.read_csv(
   encoding='latin1'
 )
 
+# Optional: Online whitepaper links per concept
+whitepapers_links = None
+try:
+  whitepapers_raw = pd.read_csv(
+    DATA_DIR / 'All Hits - Whitepapers.csv',
+    engine='python',
+    encoding='latin1'
+  )
+  whitepapers_raw.columns = whitepapers_raw.columns.str.strip()
+  # Drop completely empty columns (common in exported CSVs)
+  whitepapers_raw = whitepapers_raw.drop(columns=[c for c in whitepapers_raw.columns if whitepapers_raw[c].isna().all()])
+  # Standardize expected link column name
+  link_col = None
+  for candidate in ['Link to Whitepaper', 'Whitepaper Link', 'Whitepaper URL', 'Link']:
+    if candidate in whitepapers_raw.columns:
+      link_col = candidate
+      break
+  if link_col is not None and 'Concept' in whitepapers_raw.columns:
+    # Keep first non-null link per concept
+    whitepapers_df = (
+      whitepapers_raw[['Concept', link_col]]
+        .dropna(subset=['Concept'])
+        .sort_values('Concept')
+        .drop_duplicates(subset=['Concept'], keep='first')
+    )
+    whitepapers_df[link_col] = whitepapers_df[link_col].astype(str).str.strip()
+    whitepapers_links = dict(zip(whitepapers_df['Concept'], whitepapers_df[link_col]))
+except Exception:
+  whitepapers_links = None
+
 # Normalize column headers (strip accidental leading/trailing spaces)
 for df in (all_hits, presented_hits, provider_hits):
   df.columns = df.columns.str.strip()
@@ -316,20 +346,27 @@ summary_html = f"""
 </div>
 """
 
-# Build concepts table with delivery date and PDF links
-concepts_df = presented_hits[['Concept', 'Date of Client Delivery', 'Description']].dropna(subset=['Concept']).drop_duplicates()
-concepts_df['Date of Client Delivery'] = pd.to_datetime(concepts_df['Date of Client Delivery']).dt.date
-concepts_df = concepts_df.sort_values('Date of Client Delivery')
-def _concept_pdf_link(name: str) -> str:
-  # Prefer relative links so both root and reports pages work; allow BASE_PATH override
-  href = f"{BASE_PATH}/Whitepapers/{name}.pdf" if BASE_PATH else f"Whitepapers/{name}.pdf"
-  return f"<a href='{href}' target='_blank'>{name}</a>"
-concepts_df['White paper'] = concepts_df['Concept'].apply(
-  lambda n: f"<a href='{(BASE_PATH + '/Whitepapers/' + n + '.pdf') if BASE_PATH else 'Whitepapers/' + n + '.pdf'}' target='_blank'>📄</a>"
-)
-# Keep concept names as plain text (no link)
-concepts_df = concepts_df[['White paper', 'Concept', 'Date of Client Delivery', 'Description']]
-concept_table_html = concepts_df.to_html(index=False, classes=['concept-table'], escape=False)
+"""Build concepts tables: full (with White paper links) and published (without)."""
+concepts_df_base = presented_hits[['Concept', 'Date of Client Delivery', 'Description']].dropna(subset=['Concept']).drop_duplicates()
+concepts_df_base['Date of Client Delivery'] = pd.to_datetime(concepts_df_base['Date of Client Delivery']).dt.date
+concepts_df_base = concepts_df_base.sort_values('Date of Client Delivery')
+
+# Full table with White paper column (prefer online links from CSV, else fallback to local path)
+def _whitepaper_icon_link(concept: str) -> str:
+  if whitepapers_links and concept in whitepapers_links and whitepapers_links[concept]:
+    href = whitepapers_links[concept]
+  else:
+    href = f"{BASE_PATH + '/Whitepapers/' + concept + '.pdf' if BASE_PATH else 'Whitepapers/' + concept + '.pdf'}"
+  return f"<a href='{href}' target='_blank' aria-label='Whitepaper for {concept}'>📄</a>"
+
+concepts_df_full = concepts_df_base.copy()
+concepts_df_full['White paper'] = concepts_df_full['Concept'].apply(_whitepaper_icon_link)
+concepts_df_full = concepts_df_full[['White paper', 'Concept', 'Date of Client Delivery', 'Description']]
+concept_table_html_full = concepts_df_full.to_html(index=False, classes=['concept-table'], escape=False)
+
+# Published table without White paper column
+concepts_df_published = concepts_df_base.copy()
+concept_table_published_html = concepts_df_published[['Concept', 'Date of Client Delivery', 'Description']].to_html(index=False, classes=['concept-table'], escape=False)
 
 def format_currency_table(df: pd.DataFrame) -> pd.DataFrame:
   df = df.copy()
@@ -382,7 +419,7 @@ html = f"""
 
   <h2>FWA Concepts Presented to BCBS NC</h2>
   <div class='table-wrap'>
-    {concept_table_html}
+    {concept_table_html_full}
   </div>
 
   <h2>Concept-Level Statistics — Presented Hits to BCBS NC</h2>
@@ -419,11 +456,72 @@ html = f"""
 </html>
 """
 
+# Build published HTML variant (without White paper column in concepts table)
+html_published = f"""
+<!doctype html>
+<html>
+<head>
+<meta charset='utf-8'>
+<title>Executive Dashboard — FWA (BCBS NC)</title>
+{style}
+</head>
+<body>
+<div class='container'>
+  <div class='brand-bar'>
+    <img src='visuals/Machinify_Logo.jpg' alt='Machinify Logo'>
+    <img src='visuals/BCBS_NorthCarolina_Logo.png' alt='BCBS North Carolina Logo'>
+  </div>
+  <h1>FWA Deliverables (BCBS NC) —  Executive Tracking Dashboard</h1>
+  <p class='small'>This dashboard summarizes delivered FWA concepts, key statistics, and provider-level distributions.</p>
+  <p class='small'>As of {today_str}</p>
+
+  <h2>Aggregate Summary</h2>
+  {summary_html}
+
+  <h2>FWA Concepts Presented to BCBS NC</h2>
+  <div class='table-wrap'>
+    {concept_table_published_html}
+  </div>
+
+  <h2>Concept-Level Statistics — Presented Hits to BCBS NC</h2>
+  <div class='table-wrap'>
+    {presented_table_html}
+  </div>
+
+  <h2>Concept-Level Statistics — All Identified Hits</h2>
+  <div class='table-wrap'>
+    {all_table_html}
+  </div>
+
+  <h2>Live Tracker — Cumulative Estimated Overpayment Over Time</h2>
+  <p class='small'>Live tracking of cumulative overpayments identified over time.</p>
+  <h3>Delivery Cadence</h3>
+  <p class='small'>Days since baseline (2025-11-05); average successive cadence: <strong>{avg_interval_days:.1f} days</strong>.</p>
+  <div class='table-wrap'>
+    {progress_table_html}
+  </div>
+  <h3>Presented Hits</h3>
+  {presented_line_html}
+  <h3>All Identified Hits</h3>
+  {all_line_html}
+
+  <h2>Provider-Level Distributions Across All Identified Hits</h2>
+  <p class='small'>Distribution of Providers by the total overpayment and number of claim hits shown by concept.</p>
+  {paid_hist_html}
+  {claims_hist_html}
+
+</div>
+</body>
+</html>
+"""
+
 # Always write root-level dashboard
 root_output = BASE / 'executive-dashboard.html'
+root_output_published = BASE / 'executive-dashboard-published.html'
 root_output.write_text(html, encoding='utf-8')
+root_output_published.write_text(html_published, encoding='utf-8')
 
-written_paths = [root_output]
+written_paths = [root_output, root_output_published]
 
 # Always write to reports directory as well
 reports_dir = REPORTS_DIR
@@ -443,8 +541,10 @@ if src_vis.exists():
     shutil.rmtree(dst_vis)
   shutil.copytree(src_vis, dst_vis)
 reports_output = reports_dir / 'executive-dashboard.html'
+reports_output_published = reports_dir / 'executive-dashboard-published.html'
 reports_output.write_text(html, encoding='utf-8')
-written_paths.append(reports_output)
+reports_output_published.write_text(html_published, encoding='utf-8')
+written_paths.extend([reports_output, reports_output_published])
 
 # Additionally write to OUTPUT_DIR when provided (and copy assets)
 if OUTPUT_DIR:
@@ -466,8 +566,10 @@ if OUTPUT_DIR:
     shutil.copytree(src_vis, dst_vis)
   # Avoid duplicating the reports write if OUTPUT_DIR is 'reports'
   target_output = out_dir / 'executive-dashboard.html'
+  target_output_published = out_dir / 'executive-dashboard-published.html'
   if out_dir.resolve() != reports_dir.resolve():
     target_output.write_text(html, encoding='utf-8')
-    written_paths.append(target_output)
+    target_output_published.write_text(html_published, encoding='utf-8')
+    written_paths.extend([target_output, target_output_published])
 
 print("Wrote dashboard to: " + ", ".join(str(p) for p in written_paths))
